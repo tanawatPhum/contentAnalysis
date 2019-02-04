@@ -1,0 +1,31 @@
+{
+    "name": "contentAnalysis",
+    "version": "1.0.0",
+    "description": "contentAnalysis",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "npm run node:serve"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "docx2html": "^1.1.0",
+        "docx4js": "^3.1.16",
+        "jasmine-xml2html-converter": "0.0.2",
+        "mammoth": "^1.4.7",
+        "node-7z": "^1.0.1",
+        "node-livedocx": "0.0.5",
+        "office-document-properties": "^1.0.7",
+        "officegen": "^0.4.7",
+        "request": "^2.88.0",
+        "soap": "^0.25.0",
+        "string-similarity": "^3.0.0",
+        "textract": "^2.4.0",
+        "unzip": "^0.1.11",
+        "unzipper": "^0.9.10",
+        "word-extractor": "^0.2.2",
+        "word2pdf": "^1.0.7",
+        "xml2json": "^0.11.2"
+    }
+}
