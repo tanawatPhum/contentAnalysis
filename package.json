@@ -10,6 +10,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "cheerio-tableparser": "^1.0.1",
         "docx2html": "^1.1.0",
         "docx4js": "^3.1.16",
         "jasmine-xml2html-converter": "0.0.2",

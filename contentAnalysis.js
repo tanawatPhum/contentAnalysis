@@ -12,16 +12,17 @@ var unzipper = require('unzipper');
 var WordExtractor = require("word-extractor");
 var extractor = new WordExtractor();
 var extracted = extractor.extract("MU_011.docx");
-const listOfTitlesMU_01_0_11 = ['1.  ชื่อโครงการ', '2.  ชื่อผู้ขอทุน', '3.  ชื่อผู้ร่วมกลุ่มวิจัย'];
+const listOfTitlesMU_01_0_11 = ['1.  ชื่อโครงการ', '2.  ชื่อผู้ขอทุน', '3.  ชื่อผู้ร่วมกลุ่มวิจัย', '4. สัดส่วนการมีส่วนร่วมในผลงาน', '5. ความสำคัญ ที่มาของปัญหาที่ทำการวิจัยและการทบทวนเอกสารที่เกี่ยวข้อง', '6. คำถามวิจัย/สมมติฐานการวิจัย'];
 const listOfSubTitlesMU_01_0_11 = ['2.1 สถานภาพ', '2.2 วัน/เดือน/ปีเกิด', '2.3 ประเภททุนที่เสนอขอ', '2.4 ผลผลิต'];
-const listOfLabelsMU_01_0_11 = ['ภาษาไทย', 'ปีงบประมาณที่ขอทุน', 'ประเภททุนที่เสนอขอ', 'สถานภาพ', 'ผลผลิต'];
-
+const listOfLabelsMU_01_0_11 = ['ภาษาไทย', 'ปีงบประมาณที่ขอทุน', 'ประเภททุนที่เสนอขอ', 'สถานภาพ', 'ผลผลิต', 'ชื่อ-นามสกุล', 'ชื่อ-สกุล', 'อายุ', 'วัน/เดือน/ปีเกิด'];
+// const listOfLabelTables_MU_01_0_11 = ['เดือนที่', 'กิจกรรม (รายการที่วางแผนจะทำ)', 'ผลงานที่คาดว่าจะได้รับ (outputs)*', 'ผู้รับผิดชอบ']
 var getDocumentProps = require('office-document-properties')
 var parser = require('xml2json');
 var unzip = require('unzip');
 // var out = fs.createWriteStream('MU_011.docx');
 const fs = require('fs');
-
+var cheerio = require('cheerio'),
+    cheerioTableparser = require('cheerio-tableparser');
 // var docx2html = require('docx2html')
 // docx2html("MU_011.docx").then(function(html) {
 //     console.log(html.toString())
@@ -29,17 +30,53 @@ const fs = require('fs');
 
 // fs.createReadStream('MU_011.docx')
 //     .pipe(unzipper.Extract({ path: 'wordXml' }));
+var mammoth = require("mammoth");
 
-// var mammoth = require("mammoth");
+mammoth.convertToHtml({ path: "MU_011.docx" })
+    .then(function(result) {
+        var html = result.value; // The generated HTML
+        var jsonOfData = {}
+            // var messages = result.messages; // Any messages, such as warnings during conversion
+        var allTables = html.match(/<table>(.*?)<\/table>/g)
+        allTables.forEach((table) => {
+            table = table.replace(/<table>/, "<table id='tableDoc'>")
+            $ = cheerio.load(table)
+            cheerioTableparser($);
+            var tableData = $("#tableDoc").parsetable(true, true, true);
+            console.log("tableData", tableData)
+        })
 
-// mammoth.convertToHtml({ path: "MU_011.docx" })
-//     .then(function(result) {
-//         var html = result.value; // The generated HTML
-//         var messages = result.messages; // Any messages, such as warnings during conversion
-//         var x = html.match(/<table>(.*?)<\/table>/g);
-//         console.log(x)
-//     })
-//     .done();
+        var valueOfAllTables = []
+            // console.log("allTables", allTables)
+            // allTables.forEach((table) => {
+            //     var headerOfTable = []
+            //     var allRows = table.match(/<tr>(.*?)<\/tr>/g)
+            //     if (allRows) {
+            //         allRows.forEach((row, indexRow) => {
+            //             allRecords = row.match(/<td>(.*?)<\/td>/g)
+            //             jsonOfData = {}
+            //             if (allRecords) {
+            //                 allRecords.forEach((record, indexRecord) => {
+            //                     var rawData = record.replace(/<(.*?)>/g, "")
+            //                     if (rawData) {
+            //                         if (indexRow == 0) {
+            //                             headerOfTable.push(rawData)
+            //                         } else {
+            //                             jsonOfData[headerOfTable[indexRecord]] = rawData
+            //                         }
+            //                     }
+            //                 })
+            //             }
+
+        //             valueOfAllTables.push(jsonOfData)
+        //         })
+        //     }
+
+        // })
+        //  console.log("valueOfAllTables", valueOfAllTables)
+        // console.log(x)
+    })
+    .done();
 
 
 // fs.readFile('wordXml/word/document.xml', function(err, data) {
@@ -68,7 +105,7 @@ mammoth.extractRawText({ path: "MU_011.docx" })
         // text = doc.getBody();
 
         text = preProcessDocument(text)
-            // console.log("text==>", text)
+            //console.log("text==>", text)
         const listOfTitles = listOfTitlesMU_01_0_11; //['ชื่อโครงการ', 'ชื่อผู้ขอทุน', 'ชื่อผู้ร่วมกลุ่มวิจัย', 'สัดส่วนการมีส่วนร่วมในผลงาน', 'ความสำคัญ ที่มาของปัญหาที่ทำการวิจัยและการทบทวนเอกสารที่เกี่ยวข้อง']
         const listOfSubTitles = listOfSubTitlesMU_01_0_11; //['สถานภาพ', 'วัน/เดือน/ปีเกิด', 'ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย', 'ประวัติการศึกษา', 'ระบุสาขาวิชาที่เชี่ยวชาญ', 'ผลงานวิจัยของหัวหน้ากลุ่มวิจัยได้รับการตีพิมพ์ระดับนานาชาติที่มีการอ้างอิง', 'ผลงานวิจัยที่ได้รับการจดสิทธิบัตร', 'ระบุชื่อโครงการที่เคยได้รับและกำลังได้รับทุนจากแหล่งทุนอื่น ๆ']
         const listOfLabels = listOfLabelsMU_01_0_11; //["ภาษาไทย", "ภาษาอังกฤษ", "ตำแหน่งวิชาการ", "สังกัดภาควิชา", "คณะ/สถาบัน", "โทรศัพท์", "โทรสาร", "E-mail", "วัน/เดือน/ปีเกิด", "อายุ", "ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย", "ประวัติการศึกษา", "ปริญญาตรีสาขา", "ปริญญาโทสาขา", "ปริญญาเอกสาขา", "สถาบันที่สำเร็จการศึกษา", "วุฒิอื่น ๆ", "ระบุสาขาวิชาที่เชี่ยวชาญ", "Citation",
@@ -172,6 +209,7 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
                 var contentOfAllTitle = text.match(rexFindBoundaryOfTitle)
                     //  console.log(contentOfAllTitle)
                 if (contentOfAllTitle) {
+                    //console.log(contentOfAllTitle)
                     // var rexFindTitle = new RegExp("(\\d{1,2})(\\.{1})?([^\\d])" + title2)
                     var rexFindTitle = new RegExp(title2)
                     var contentOfTitle = contentOfAllTitle[0].match(rexFindTitle)
@@ -197,7 +235,21 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
 
                 }
             } else {
+                var rexFindBoundaryOfTitle = null
+                    // if (titleIndex == listOfTitles.length - 1 && resultBoundaryOfLastTile) {
+                    //     // console.log(resultBoundaryOfLastTile)
+                    //     rexFindBoundaryOfTitle = new RegExp("(?<=(\\d{1,2})(\\.{1})?\\s?" + resultBoundaryOfLastTile + ").*")
+                    // } else {
+                    //     rexFindBoundaryOfTitle = new RegExp("(?<=(\\d{1,2})(\\.{1})?([^\\d])\\s?" + title1 + ").*(?=(\\d{1,2})(\\.{1})?([^\\d])\\s?" + resultBoundaryOfContent + ")")
+                    // }
+                    // rexFindBoundaryOfTitle = new RegExp("(?<=(\\d{1,2})(\\.{1})?([^\\d])(\\s)+" + title1 + ").*(?=(\\d{1,2})(\\.{1})?([^\\d])(\\s)+" + resultBoundaryOfContent + ")")
+                rexFindBoundaryOfTitle = new RegExp("(?<=(" + title1 + ")).*(?=" + resultBoundaryOfContent + ")")
+                    //console.log("content0", rexFindBoundaryOfTitle)
+                var content = text.match(rexFindBoundaryOfTitle)
 
+                var indexOfLastSubTile = -1;
+                var resultBoundaryOfLastSubTile = null;
+                if (content) {}
             }
         })
 
@@ -228,7 +280,7 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
                             // var rexFindBoundaryOfSubTitle = new RegExp("(?<=(\\d{1,2})(\\.{1})?(\\d)\\s?" + subTitle + ").*((\\d{1,2})(\\.{1})?([\\d])\\s?" + subTitle2 + ")")
                             var rexFindBoundaryOfSubTitle = new RegExp("(?<=" + subTitle + ").*(" + subTitle2 + ")")
                                 // console.log("xxxxxxxxxxxxxxxxxxxx", rexFindBoundaryOfSubTitle)
-                                // console.log(subTitle2)
+                                //  console.log(subTitle2)
                             var contentOfAllSubTitle = content[0].match(rexFindBoundaryOfSubTitle)
                                 // console.log(content[0])
                             if (contentOfAllSubTitle) {
@@ -261,6 +313,7 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
                         // console.log(ev)
                     })
                     if (resultBoundaryOfSubTile) {
+                        // console.log(resultBoundaryOfLastSubTile)
                         //console.log("resultBoundaryOfLastSubTile", resultBoundaryOfLastSubTile)
                         // var rexFindBoundaryOfSubTitle = new RegExp("(?<=(\\d{1,2})(\\.{1})?(\\d)\\s?)" + subTitle + ".*(?=(\\d{1,2})(\\.{1})?(\\d)\\s?" + resultBoundaryOfSubTile + ")")
                         var rexFindBoundaryOfSubTitle = new RegExp(subTitle + ".*(?=" + resultBoundaryOfSubTile + ")")
@@ -353,9 +406,10 @@ function extractvalueOfContent(listOfLabels, listOfSymbols, ev) {
     //console.log(ev.content)
     var listInputOfContents = ev.content.split(/(\s{2,})|((☒|☐)(.+))/g)
     listInputOfContents = listInputOfContents.filter((ev) => { return ev != null && ev != "  " && ev != /\S/g && ev != "" && ev != "." && ev != " " && ev != "☐" && ev != "☒" })
-        // console.log("titlexxxxxx", ev.title)
-        //console.log("ev.content", ev.content)
-        // console.log(listInputOfContents)
+    var notLabels = true;
+    // console.log("titlexxxxxx", ev.title)
+    //console.log("ev.content", ev.content)
+    // console.log(listInputOfContents)
     var valueOfContent = { title: ev.title, valueList: [] }
     if (listInputOfContents) {
         listInputOfContents.forEach((input) => {
@@ -391,6 +445,7 @@ function extractvalueOfContent(listOfLabels, listOfSymbols, ev) {
                             listOfLabels.find(ev => ev == label) && input != null && input != "  " && input != /\S/g && input != "" && input != "." && input != " ") ||
                         listOfSymbols.find(ev => ev.test(input))
                     ) {
+                        notLabels = false;
                         //console.log(label + ":" + input)
                         if (listOfSymbols.find(ev => ev.test(input))) {
                             input = input.split(/\s{2,}/g)
@@ -438,6 +493,9 @@ function extractvalueOfContent(listOfLabels, listOfSymbols, ev) {
             }
 
         })
+    }
+    if (notLabels) {
+        valueOfContent.valueList.push({ label: ev.title, value: ev.content })
     }
     // console.log("valueOfContent==>", valueOfContent)
     return valueOfContent
