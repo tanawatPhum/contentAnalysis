@@ -1,179 +1,56 @@
 var http = require('http')
-var textract = require('textract')
-const filePath = "https://docs.google.com/document/export?format=docx&id=1nqi-j6qC0JPMHHrntENvyvOMRjty8mx1iu0699Kx13k&token=AC4w5VjzJhLSFZL9Xu2JLkJHIIKXF89t0g%3A1548318895286&ouid=110574417141925153093&includes_info_params=true"
-config = { preserveLineBreaks: false, encoding: 'raw_unicode_escape' }
+config = {
+    preserveLineBreaks: false,
+    encoding: 'raw_unicode_escape'
+}
 
 var mammoth = require("mammoth");
-const https = require('https');
-var request = require('request');
-
-var unzipper = require('unzipper');
-
-var WordExtractor = require("word-extractor");
-var extractor = new WordExtractor();
-var extracted = extractor.extract("MU_011.docx");
-const listOfTitlesMU_01_0_11 = ['1.  ชื่อโครงการ', '2.  ชื่อผู้ขอทุน', '3.  ชื่อผู้ร่วมกลุ่มวิจัย', '4. สัดส่วนการมีส่วนร่วมในผลงาน', '5. ความสำคัญ ที่มาของปัญหาที่ทำการวิจัยและการทบทวนเอกสารที่เกี่ยวข้อง', '6. คำถามวิจัย/สมมติฐานการวิจัย'];
-const listOfSubTitlesMU_01_0_11 = ['2.1 สถานภาพ', '2.2 วัน/เดือน/ปีเกิด', '2.3 ประเภททุนที่เสนอขอ', '2.4 ผลผลิต'];
-const listOfLabelsMU_01_0_11 = ['ภาษาไทย', 'ปีงบประมาณที่ขอทุน', 'ประเภททุนที่เสนอขอ', 'สถานภาพ', 'ผลผลิต', 'ชื่อ-นามสกุล', 'ชื่อ-สกุล', 'อายุ', 'วัน/เดือน/ปีเกิด'];
-// const listOfLabelTables_MU_01_0_11 = ['เดือนที่', 'กิจกรรม (รายการที่วางแผนจะทำ)', 'ผลงานที่คาดว่าจะได้รับ (outputs)*', 'ผู้รับผิดชอบ']
-var getDocumentProps = require('office-document-properties')
-var parser = require('xml2json');
-var unzip = require('unzip');
-// var out = fs.createWriteStream('MU_011.docx');
-const fs = require('fs');
+const listOfTitles = ['1.  ชื่อโครงการ', '2.  ชื่อผู้ขอทุน', '3.  ชื่อผู้ร่วมกลุ่มวิจัย', '4. สัดส่วนการมีส่วนร่วมในผลงาน', '5. ความสำคัญ ที่มาของปัญหาที่ทำการวิจัยและการทบทวนเอกสารที่เกี่ยวข้อง', '6. คำถามวิจัย/สมมติฐานการวิจัย', '7. วัตถุประสงค์ของกลุ่มวิจัย', '8. ระเบียบวิธีวิจัย ขั้นตอนการดำเนินงาน และแผนการดำเนินกลุ่มวิจัย (โปรดระบุให้ชัดเจนพร้อมเอกสารอ้างอิง)', '9. ระยะเวลาที่ทำการวิจัย', '10. สถานที่ทำการวิจัย/เก็บข้อมูล และอุปกรณ์ในการทำวิจัยที่มีอยู่แล้วในหน่วยงาน'];
+const listOfSubTitles = ['2.1 สถานภาพ', '2.2 วัน/เดือน/ปีเกิด', '2.3 ประเภททุนที่เสนอขอ', '2.4 ผลผลิต'];
+const listOfLabels = ['ภาษาไทย', 'ปีงบประมาณที่ขอทุน', 'ประเภททุนที่เสนอขอ', 'สถานภาพ', 'ผลผลิต', 'ชื่อ-นามสกุล', 'ชื่อ-สกุล', 'อายุ', 'วัน/เดือน/ปีเกิด'];
+const listOfLabelTables = ['เดือนที่', 'กิจกรรม (รายการที่วางแผนจะทำ)', 'ผลงานที่คาดว่าจะได้รับ (outputs)*', 'ผู้รับผิดชอบ']
 var cheerio = require('cheerio'),
     cheerioTableparser = require('cheerio-tableparser');
-// var docx2html = require('docx2html')
-// docx2html("MU_011.docx").then(function(html) {
-//     console.log(html.toString())
-// })
-
-// fs.createReadStream('MU_011.docx')
-//     .pipe(unzipper.Extract({ path: 'wordXml' }));
 var mammoth = require("mammoth");
+var pathDoc = "MU_011.docx"
 
-mammoth.convertToHtml({ path: "MU_011.docx" })
-    .then(function(result) {
-        var html = result.value; // The generated HTML
-        var jsonOfData = {}
-            // var messages = result.messages; // Any messages, such as warnings during conversion
-        var allTables = html.match(/<table>(.*?)<\/table>/g)
-        allTables.forEach((table) => {
-            table = table.replace(/<table>/, "<table id='tableDoc'>")
-            $ = cheerio.load(table)
-            cheerioTableparser($);
-            var tableData = $("#tableDoc").parsetable(true, true, true);
-            console.log("tableData", tableData)
-        })
 
-        var valueOfAllTables = []
-            // console.log("allTables", allTables)
-            // allTables.forEach((table) => {
-            //     var headerOfTable = []
-            //     var allRows = table.match(/<tr>(.*?)<\/tr>/g)
-            //     if (allRows) {
-            //         allRows.forEach((row, indexRow) => {
-            //             allRecords = row.match(/<td>(.*?)<\/td>/g)
-            //             jsonOfData = {}
-            //             if (allRecords) {
-            //                 allRecords.forEach((record, indexRecord) => {
-            //                     var rawData = record.replace(/<(.*?)>/g, "")
-            //                     if (rawData) {
-            //                         if (indexRow == 0) {
-            //                             headerOfTable.push(rawData)
-            //                         } else {
-            //                             jsonOfData[headerOfTable[indexRecord]] = rawData
-            //                         }
-            //                     }
-            //                 })
-            //             }
 
-        //             valueOfAllTables.push(jsonOfData)
-        //         })
-        //     }
-
-        // })
-        //  console.log("valueOfAllTables", valueOfAllTables)
-        // console.log(x)
+mammoth.extractRawText({
+        path: pathDoc
     })
-    .done();
-
-
-// fs.readFile('wordXml/word/document.xml', function(err, data) {
-//     var json = parser.toJson(data);
-//     console.log("to json ->", json);
-// });
-// const fs = require('fs');
-// var parser = require('xml2json');
-// fs.readFile('mynewfile3.xml', function(err, data) {
-//     console.log(data)
-//         // var json = parser.toJson(data);
-//         // console.log("to json ->", json);
-//         // fs.writeFile('mynewfile3.pdf', data, function(err) {
-//         //     if (err) throw err;
-//         //     console.log('Saved!');
-//         // });
-//         // console.log(err)
-//         // console.log(data)
-//         // res.writeHead(200, {'Content-Type': 'text/html'});
-//         // res.write(data);
-//         // res.end();
-// });
-mammoth.extractRawText({ path: "MU_011.docx" })
     .then(function(result) {
         var text = result.value; // The raw text
         // text = doc.getBody();
 
         text = preProcessDocument(text)
-            //console.log("text==>", text)
-        const listOfTitles = listOfTitlesMU_01_0_11; //['ชื่อโครงการ', 'ชื่อผู้ขอทุน', 'ชื่อผู้ร่วมกลุ่มวิจัย', 'สัดส่วนการมีส่วนร่วมในผลงาน', 'ความสำคัญ ที่มาของปัญหาที่ทำการวิจัยและการทบทวนเอกสารที่เกี่ยวข้อง']
-        const listOfSubTitles = listOfSubTitlesMU_01_0_11; //['สถานภาพ', 'วัน/เดือน/ปีเกิด', 'ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย', 'ประวัติการศึกษา', 'ระบุสาขาวิชาที่เชี่ยวชาญ', 'ผลงานวิจัยของหัวหน้ากลุ่มวิจัยได้รับการตีพิมพ์ระดับนานาชาติที่มีการอ้างอิง', 'ผลงานวิจัยที่ได้รับการจดสิทธิบัตร', 'ระบุชื่อโครงการที่เคยได้รับและกำลังได้รับทุนจากแหล่งทุนอื่น ๆ']
-        const listOfLabels = listOfLabelsMU_01_0_11; //["ภาษาไทย", "ภาษาอังกฤษ", "ตำแหน่งวิชาการ", "สังกัดภาควิชา", "คณะ/สถาบัน", "โทรศัพท์", "โทรสาร", "E-mail", "วัน/เดือน/ปีเกิด", "อายุ", "ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย", "ประวัติการศึกษา", "ปริญญาตรีสาขา", "ปริญญาโทสาขา", "ปริญญาเอกสาขา", "สถาบันที่สำเร็จการศึกษา", "วุฒิอื่น ๆ", "ระบุสาขาวิชาที่เชี่ยวชาญ", "Citation",
-        //     "จำนวน h index", "ชื่อโครงการ", "ชื่อแหล่งทุน", "จำนวนเงินทุนวิจัยที่ได้รับ", "ช่วงเวลาที่ได้รับทุน", "ถึงปี", "ปีที่เริ่มปฏิบัติงาน", "นับถึงปัจจุบันเป็นเวลา", "ชื่อ-นามสกุล", "และ ภาษาอังกฤษ", "ช่วงเวลาที่ได้รับทุนปี", "ปี", "สถานภาพ", "ชื่อ-สกุล", "สัดส่วน", "(ลายเซ็น)"
-        // ]
-
-        // const listOfTitles = ['ชื่อโครงการ', 'ชื่อผู้ขอทุน', 'ชื่อผู้ร่วมกลุ่มวิจัย', 'สัดส่วนการมีส่วนร่วมในผลงาน', 'ความสำคัญ ที่มาของปัญหาที่ทำการวิจัยและการทบทวนเอกสารที่เกี่ยวข้อง']
-        // const listOfSubTitles = ['สถานภาพ', 'วัน/เดือน/ปีเกิด', 'ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย', 'ประวัติการศึกษา', 'ระบุสาขาวิชาที่เชี่ยวชาญ', 'ผลงานวิจัยของหัวหน้ากลุ่มวิจัยได้รับการตีพิมพ์ระดับนานาชาติที่มีการอ้างอิง', 'ผลงานวิจัยที่ได้รับการจดสิทธิบัตร', 'ระบุชื่อโครงการที่เคยได้รับและกำลังได้รับทุนจากแหล่งทุนอื่น ๆ']
-        // const listOfLabels = ["ภาษาไทย", "ภาษาอังกฤษ", "ตำแหน่งวิชาการ", "สังกัดภาควิชา", "คณะ/สถาบัน", "โทรศัพท์", "โทรสาร", "E-mail", "วัน/เดือน/ปีเกิด", "อายุ", "ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย", "ประวัติการศึกษา", "ปริญญาตรีสาขา", "ปริญญาโทสาขา", "ปริญญาเอกสาขา", "สถาบันที่สำเร็จการศึกษา", "วุฒิอื่น ๆ", "ระบุสาขาวิชาที่เชี่ยวชาญ", "Citation",
-        //     "จำนวน h index", "ชื่อโครงการ", "ชื่อแหล่งทุน", "จำนวนเงินทุนวิจัยที่ได้รับ", "ช่วงเวลาที่ได้รับทุน", "ถึงปี", "ปีที่เริ่มปฏิบัติงาน", "นับถึงปัจจุบันเป็นเวลา", "ชื่อ-นามสกุล", "และ ภาษาอังกฤษ", "ช่วงเวลาที่ได้รับทุนปี", "ปี", "สถานภาพ", "ชื่อ-สกุล", "สัดส่วน", "(ลายเซ็น)"
-        // ]
         const listOfSymbols = [/☒/, /☐/]
         var listOfContents = identityDocument(text, listOfTitles, listOfSubTitles)
             //console.log("listOfContents====> ", listOfContents)
-        var listOfvalues = extractDocument(listOfContents, listOfLabels, listOfSymbols)
-
-        listOfvalues.forEach((ev) => {
-                console.log("title==> ", ev.title)
+        extractDocument(listOfContents, listOfLabels, listOfSymbols).then((listOfvalues) => {
+            console.log(listOfvalues)
+            listOfvalues.forEach((ev) => {
+                // console.log("title==> ", ev.title)
+                // console.log(ev)
                 ev.content.valueList.forEach((ev) => {
                         console.log("results=> ", ev)
                     })
                     // console.log(ev.subContents)
                 ev.subContent.forEach((subContent) => {
-
                     subContent.valueList.forEach((ev) => {
                         console.log("results=> ", ev)
                     })
                 })
+                ev.tableContent.forEach((ev) => {
+                    console.log("results=> ", ev)
+                })
             })
-            // var messages = result.messages;
+        })
+
+
+        // var messages = result.messages;
     })
     .done();
-
-// extracted.then(function(doc) {
-//     var text = doc.getBody();
-
-//     text = preProcessDocument(text)
-//         // console.log("text==>", text)
-//     const listOfTitles = listOfTitlesMU_01_0_11; //['ชื่อโครงการ', 'ชื่อผู้ขอทุน', 'ชื่อผู้ร่วมกลุ่มวิจัย', 'สัดส่วนการมีส่วนร่วมในผลงาน', 'ความสำคัญ ที่มาของปัญหาที่ทำการวิจัยและการทบทวนเอกสารที่เกี่ยวข้อง']
-//     const listOfSubTitles = listOfSubTitlesMU_01_0_11; //['สถานภาพ', 'วัน/เดือน/ปีเกิด', 'ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย', 'ประวัติการศึกษา', 'ระบุสาขาวิชาที่เชี่ยวชาญ', 'ผลงานวิจัยของหัวหน้ากลุ่มวิจัยได้รับการตีพิมพ์ระดับนานาชาติที่มีการอ้างอิง', 'ผลงานวิจัยที่ได้รับการจดสิทธิบัตร', 'ระบุชื่อโครงการที่เคยได้รับและกำลังได้รับทุนจากแหล่งทุนอื่น ๆ']
-//     const listOfLabels = listOfLabelsMU_01_0_11; //["ภาษาไทย", "ภาษาอังกฤษ", "ตำแหน่งวิชาการ", "สังกัดภาควิชา", "คณะ/สถาบัน", "โทรศัพท์", "โทรสาร", "E-mail", "วัน/เดือน/ปีเกิด", "อายุ", "ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย", "ประวัติการศึกษา", "ปริญญาตรีสาขา", "ปริญญาโทสาขา", "ปริญญาเอกสาขา", "สถาบันที่สำเร็จการศึกษา", "วุฒิอื่น ๆ", "ระบุสาขาวิชาที่เชี่ยวชาญ", "Citation",
-//     //     "จำนวน h index", "ชื่อโครงการ", "ชื่อแหล่งทุน", "จำนวนเงินทุนวิจัยที่ได้รับ", "ช่วงเวลาที่ได้รับทุน", "ถึงปี", "ปีที่เริ่มปฏิบัติงาน", "นับถึงปัจจุบันเป็นเวลา", "ชื่อ-นามสกุล", "และ ภาษาอังกฤษ", "ช่วงเวลาที่ได้รับทุนปี", "ปี", "สถานภาพ", "ชื่อ-สกุล", "สัดส่วน", "(ลายเซ็น)"
-//     // ]
-
-//     // const listOfTitles = ['ชื่อโครงการ', 'ชื่อผู้ขอทุน', 'ชื่อผู้ร่วมกลุ่มวิจัย', 'สัดส่วนการมีส่วนร่วมในผลงาน', 'ความสำคัญ ที่มาของปัญหาที่ทำการวิจัยและการทบทวนเอกสารที่เกี่ยวข้อง']
-//     // const listOfSubTitles = ['สถานภาพ', 'วัน/เดือน/ปีเกิด', 'ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย', 'ประวัติการศึกษา', 'ระบุสาขาวิชาที่เชี่ยวชาญ', 'ผลงานวิจัยของหัวหน้ากลุ่มวิจัยได้รับการตีพิมพ์ระดับนานาชาติที่มีการอ้างอิง', 'ผลงานวิจัยที่ได้รับการจดสิทธิบัตร', 'ระบุชื่อโครงการที่เคยได้รับและกำลังได้รับทุนจากแหล่งทุนอื่น ๆ']
-//     // const listOfLabels = ["ภาษาไทย", "ภาษาอังกฤษ", "ตำแหน่งวิชาการ", "สังกัดภาควิชา", "คณะ/สถาบัน", "โทรศัพท์", "โทรสาร", "E-mail", "วัน/เดือน/ปีเกิด", "อายุ", "ปีที่เริ่มปฏิบัติงานในมหาวิทยาลัย", "ประวัติการศึกษา", "ปริญญาตรีสาขา", "ปริญญาโทสาขา", "ปริญญาเอกสาขา", "สถาบันที่สำเร็จการศึกษา", "วุฒิอื่น ๆ", "ระบุสาขาวิชาที่เชี่ยวชาญ", "Citation",
-//     //     "จำนวน h index", "ชื่อโครงการ", "ชื่อแหล่งทุน", "จำนวนเงินทุนวิจัยที่ได้รับ", "ช่วงเวลาที่ได้รับทุน", "ถึงปี", "ปีที่เริ่มปฏิบัติงาน", "นับถึงปัจจุบันเป็นเวลา", "ชื่อ-นามสกุล", "และ ภาษาอังกฤษ", "ช่วงเวลาที่ได้รับทุนปี", "ปี", "สถานภาพ", "ชื่อ-สกุล", "สัดส่วน", "(ลายเซ็น)"
-//     // ]
-//     const listOfSymbols = [/☒/, /☐/]
-//     var listOfContents = identityDocument(text, listOfTitles, listOfSubTitles)
-//     console.log("listOfContents====> ", listOfContents)
-//     var listOfvalues = extractDocument(listOfContents, listOfLabels, listOfSymbols)
-
-//     listOfvalues.forEach((ev) => {
-//         console.log("title==> ", ev.title)
-//         ev.content.valueList.forEach((ev) => {
-//                 console.log("results=> ", ev)
-//             })
-//             // console.log(ev.subContents)
-//         ev.subContent.forEach((subContent) => {
-
-//             subContent.valueList.forEach((ev) => {
-//                 console.log("results=> ", ev)
-//             })
-//         })
-//     })
-// });
 
 function preProcessDocument(text) {
     //cleansing whitespace and newline
@@ -329,7 +206,10 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
                                 var lastsubContent = content[0].match(rexFindBoundaryOfLastSubTitle)
                                 if (lastsubContent) {
                                     // console.log(resultBoundaryOfLastSubTile)
-                                    listSubcontent.push({ title: resultBoundaryOfLastSubTile, content: lastsubContent[0] });
+                                    listSubcontent.push({
+                                        title: resultBoundaryOfLastSubTile,
+                                        content: lastsubContent[0]
+                                    });
                                 }
                             }
 
@@ -337,7 +217,10 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
                                 firstOfSubTitle = subTitle
                             }
                             //console.log("subTitle", subTitle)
-                            listSubcontent.push({ title: subTitle, content: subcontent[0] });
+                            listSubcontent.push({
+                                title: subTitle,
+                                content: subcontent[0]
+                            });
 
                         }
                         // listSubcontent.forEach((ev) => { console.log(ev.title) })
@@ -362,7 +245,11 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
                     var rexFindBoundaryOfFirstSubTitle = new RegExp(firstOfSubTitle + ".*", "g")
                     content[0] = content[0].replace(rexFindBoundaryOfFirstSubTitle, "")
                 }
-                listOfContents.push({ title: title1, content: content[0], subcontents: listSubcontent })
+                listOfContents.push({
+                        title: title1,
+                        content: content[0],
+                        subcontents: listSubcontent
+                    })
                     //console.log(listOfContents)
             }
         }
@@ -372,45 +259,142 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
 
 function extractDocument(listOfContents, listOfLabels, listOfSymbols) {
     // var listOfSubValues = [];
-    var listOfValues = [];
-    listOfContents.forEach((content, index) => {
-            // console.log(ev)
-            // var arrayInputOfContent = ev.content.match(/(?<=[\u0E00-\u0E7F|\w]+[\.|…]+)([^\.|…]+)(?=[\.|…]+)/g)
-            // console.log(ev.content)
-            //console.log(ev.content)
-            var valueOfContent = extractvalueOfContent(listOfLabels, listOfSymbols, content)
-            if (valueOfContent.valueList.length > 0) {
-                // listOfValues.push(valueOfContent)
-                listOfValues.push({ title: content.title, content: valueOfContent, subContent: [] })
-            }
-            // console.log(content.subcontents)
-            content.subcontents.forEach((subcontent) => {
-                // console.log("content title", content.title)
-                // console.log("subcontent", subcontent)
-                var valueOfContent = extractvalueOfContent(listOfLabels, listOfSymbols, subcontent)
-                if (valueOfContent.valueList.length > 0) {
+    return new Promise((resolve, reject) => {
+        var listOfValues = [];
+        listOfContents.forEach((content, index) => {
+                var valueOfContent = extractvalueOfContent(listOfLabels, listOfSymbols, content)
+                    // if (valueOfContent.valueList.length > 0) {
+                listOfValues.push({
+                        title: content.title,
+                        content: valueOfContent,
+                        subContent: [],
+                        tableContent: []
+                    })
+                    // }
+                content.subcontents.forEach((subcontent, subIndex) => {
+
+                    var valueOfContent = extractvalueOfContent(listOfLabels, listOfSymbols, subcontent)
+                        // if (valueOfContent.valueList.length > 0) {
                     listOfValues[index].subContent.push(valueOfContent)
-                        // listOfSubValues.push(valueOfContent)
-                }
+                    listOfValues[index].subContent[subIndex]["tableContent"] = []
+                        // }
+                })
             })
+            // console.log(listOfContents)
+        extractvalueOfTableContent().then((valueOfAllTables) => {
+
+            valueOfAllTables.forEach((table) => {
+                var rexOfFindTitleOfTable = null
+
+
+                table.forEach((allValues) => {
+                    var stringFindTitleOfTable = "^"
+                    allValues.forEach((value) => {
+                        //console.log(value)
+                        var newLabel = value.label.replace(/\(/g, "\\(")
+                        newLabel = newLabel.replace(/\)/g, "\\)")
+                        stringFindTitleOfTable = stringFindTitleOfTable + "(?=.*" + newLabel + ")"
+                    })
+                    stringFindTitleOfTable = stringFindTitleOfTable + ".*$"
+                    rexOfFindTitleOfTable = new RegExp(stringFindTitleOfTable)
+                    listOfContents.forEach((content, index) => {
+                        // console.log(content.content);
+                        // console.log(rexOfFindTitleOfTable)
+                        if (content.content.match(rexOfFindTitleOfTable)) {
+                            // console.log(listOfValues[index])
+                            listOfValues[index].tableContent.push(allValues)
+                        }
+                        content.subcontents.forEach((subcontent, subIndex) => {
+                            if (subcontent.content.match(rexOfFindTitleOfTable)) {
+                                listOfValues[index].subContent[subIndex].tableContent.push(allValues)
+                            }
+                        })
+                    })
+                })
+            })
+            resolve(listOfValues)
         })
-        // listOfValues.forEach((ev) => {
-        //         console.log("ALLContent", ev)
+
+    })
+
+    // console.log("listOfTableValues", listOfTableValues)
+    // listOfValues.forEach((ev) => {
+    //         console.log("ALLContent", ev)
 
     //     })
 
-    return listOfValues
+
+}
+
+function extractvalueOfTableContent() {
+
+    return new Promise((resolve, reject) => {
+        mammoth.convertToHtml({
+                path: pathDoc
+            })
+            .then(function(result) {
+                var valueOfAllTables = []
+                var html = result.value; // The generated HTML
+
+                // var messages = result.messages; // Any messages, such as warnings during conversion
+                var allTables = html.match(/<table>(.*?)<\/table>/g)
+
+                allTables.forEach((table) => {
+                    table = table.replace(/<table>/, "<table id='tableDoc'>")
+                    $ = cheerio.load(table)
+                    cheerioTableparser($);
+                    var dataOfTables = $("#tableDoc").parsetable(true, true, true);
+                    var labelName = null
+                    var jsonAllData = []
+                    dataOfTables.forEach((table, index) => {
+
+                        table.forEach((data, subIndex) => {
+
+
+                            if (listOfLabelTables.find(label => label == data)) {
+                                labelName = data
+                            } else {
+                                if (labelName && data) {
+                                    if (index == 0) {
+                                        jsonAllData.push([{ label: labelName, value: data }])
+                                    } else {
+                                        try {
+
+                                            jsonAllData[subIndex - 1].push({ label: labelName, value: data })
+
+                                        } catch (e) {}
+                                    }
+                                }
+                            }
+                        })
+
+                    })
+                    if (jsonAllData.length > 0) {
+                        valueOfAllTables.push(jsonAllData)
+                    }
+                })
+                resolve(valueOfAllTables)
+            })
+            .done();
+    })
+
+
 }
 
 function extractvalueOfContent(listOfLabels, listOfSymbols, ev) {
     //console.log(ev.content)
     var listInputOfContents = ev.content.split(/(\s{2,})|((☒|☐)(.+))/g)
-    listInputOfContents = listInputOfContents.filter((ev) => { return ev != null && ev != "  " && ev != /\S/g && ev != "" && ev != "." && ev != " " && ev != "☐" && ev != "☒" })
+    listInputOfContents = listInputOfContents.filter((ev) => {
+        return ev != null && ev != "  " && ev != /\S/g && ev != "" && ev != "." && ev != " " && ev != "☐" && ev != "☒"
+    })
     var notLabels = true;
     // console.log("titlexxxxxx", ev.title)
     //console.log("ev.content", ev.content)
     // console.log(listInputOfContents)
-    var valueOfContent = { title: ev.title, valueList: [] }
+    var valueOfContent = {
+        title: ev.title,
+        valueList: []
+    }
     if (listInputOfContents) {
         listInputOfContents.forEach((input) => {
 
@@ -469,7 +453,10 @@ function extractvalueOfContent(listOfLabels, listOfSymbols, ev) {
                                             // console.log(label)
                                             // console.log("listValueOfSymbol", listValueOfSymbol)
 
-                                            valueOfContent.valueList.push({ label: ev.title, value: listValueOfSymbol })
+                                            valueOfContent.valueList.push({
+                                                label: ev.title,
+                                                value: listValueOfSymbol
+                                            })
                                         }
                                     }
                                 })
@@ -485,7 +472,10 @@ function extractvalueOfContent(listOfLabels, listOfSymbols, ev) {
 
                         } else if (!(valueOfContent.valueList.find(ev => ev.label == label))) {
                             // console.log("label and input", label + " : " + input)
-                            valueOfContent.valueList.push({ label: label, value: input })
+                            valueOfContent.valueList.push({
+                                label: label,
+                                value: input
+                            })
                         }
                     }
 
@@ -494,14 +484,19 @@ function extractvalueOfContent(listOfLabels, listOfSymbols, ev) {
 
         })
     }
-    if (notLabels) {
-        valueOfContent.valueList.push({ label: ev.title, value: ev.content })
+    if (notLabels && ev.content && ev.title) {
+        valueOfContent.valueList.push({
+            label: ev.title,
+            value: ev.content
+        })
     }
     // console.log("valueOfContent==>", valueOfContent)
     return valueOfContent
 }
 http.createServer(function(req, res) {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.writeHead(200, {
+        'Content-Type': 'text/html'
+    });
     res.end('Hello World!');
     console.log("localhost:8080 started")
 }).listen(8080);
