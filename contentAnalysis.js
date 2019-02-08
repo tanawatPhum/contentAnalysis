@@ -13,7 +13,7 @@ var cheerio = require('cheerio'),
     cheerioTableparser = require('cheerio-tableparser');
 var mammoth = require("mammoth");
 var pathDoc = "MU_011.docx"
-
+var originalText = null;
 
 
 mammoth.extractRawText({
@@ -21,14 +21,15 @@ mammoth.extractRawText({
     })
     .then(function(result) {
         var text = result.value; // The raw text
-        // text = doc.getBody();
+        originalText = JSON.parse(JSON.stringify(text))
+            // text = doc.getBody();
 
         text = preProcessDocument(text)
         const listOfSymbols = [/☒/, /☐/]
         var listOfContents = identityDocument(text, listOfTitles, listOfSubTitles)
             //console.log("listOfContents====> ", listOfContents)
         extractDocument(listOfContents, listOfLabels, listOfSymbols).then((listOfvalues) => {
-            console.log(listOfvalues)
+            // console.log(listOfvalues)
             listOfvalues.forEach((ev) => {
                 // console.log("title==> ", ev.title)
                 // console.log(ev)
@@ -219,6 +220,7 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
                             //console.log("subTitle", subTitle)
                             listSubcontent.push({
                                 title: subTitle,
+                                nextTitle: resultBoundaryOfSubTile,
                                 content: subcontent[0]
                             });
 
@@ -247,6 +249,7 @@ function identityDocument(text, listOfTitles, listOfSubTitles) {
                 }
                 listOfContents.push({
                         title: title1,
+                        nextTitle: resultBoundaryOfContent,
                         content: content[0],
                         subcontents: listSubcontent
                     })
@@ -485,10 +488,18 @@ function extractvalueOfContent(listOfLabels, listOfSymbols, ev) {
         })
     }
     if (notLabels && ev.content && ev.title) {
-        valueOfContent.valueList.push({
-            label: ev.title,
-            value: ev.content
-        })
+
+        var rexFindBoundaryOfTitle = new RegExp("(?<=(" + ev.title + "))(.*?(\\n|\\r|\\r\\n))+.*?(?=" + ev.nextTitle + ")", "g")
+        var originalContent = originalText.match(rexFindBoundaryOfTitle)
+        if (originalContent) {
+            // originalContent[0] =  originalContent[0].replace(/(\\n|\\r|\\r\\n)/g,)
+
+            valueOfContent.valueList.push({
+                label: ev.title,
+                value: originalContent[0]
+            })
+        }
+
     }
     // console.log("valueOfContent==>", valueOfContent)
     return valueOfContent
