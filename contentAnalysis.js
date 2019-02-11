@@ -12,7 +12,7 @@ const listOfLabelTables = ['เดือนที่', 'กิจกรรม (�
 var cheerio = require('cheerio'),
     cheerioTableparser = require('cheerio-tableparser');
 var mammoth = require("mammoth");
-var pathDoc = "MU_011.docx"
+var pathDoc = "MU_CP01.docx"
 var originalText = null;
 
 
@@ -21,6 +21,7 @@ mammoth.extractRawText({
     })
     .then(function(result) {
         var text = result.value; // The raw text
+
         originalText = JSON.parse(JSON.stringify(text))
             // text = doc.getBody();
 
@@ -285,7 +286,6 @@ function extractDocument(listOfContents, listOfLabels, listOfSymbols) {
             })
             // console.log(listOfContents)
         extractvalueOfTableContent().then((valueOfAllTables) => {
-
             valueOfAllTables.forEach((table) => {
                 var rexOfFindTitleOfTable = null
 
@@ -342,7 +342,7 @@ function extractvalueOfTableContent() {
                 // var messages = result.messages; // Any messages, such as warnings during conversion
                 var allTables = html.match(/<table>(.*?)<\/table>/g)
 
-                allTables.forEach((table) => {
+                allTables && allTables.forEach((table) => {
                     table = table.replace(/<table>/, "<table id='tableDoc'>")
                     $ = cheerio.load(table)
                     cheerioTableparser($);
